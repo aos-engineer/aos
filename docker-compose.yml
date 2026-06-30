@@ -8,14 +8,14 @@
 
 services:
   site:
-    image: novashock/aos-harness-site:0.9.1-20260629-graphify
+    image: novashock/aos-harness-site:0.1.0
     build:
       context: .
       dockerfile: site/Dockerfile
       args:
-        SITE_VERSION: "0.9.1"
-        SITE_BUILD_ID: "2026-06-29-graphify"
-        BUILD_DATE: "2026-06-29T00:00:00Z"
+        SITE_VERSION: "0.1.0"
+        SITE_BUILD_ID: "0.1.0"
+        BUILD_DATE: "2026-06-30T00:00:00Z"
     restart: unless-stopped
     expose:
       - "8080"
