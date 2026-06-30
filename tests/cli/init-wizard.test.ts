@@ -44,6 +44,11 @@ const scan: ScanReport = {
       socketPath: "/tmp/mempalace.sock",
       binaryInstalled: false,
     },
+    graphify: {
+      available: false,
+      socketPath: "",
+      binaryInstalled: false,
+    },
   },
   notes: [],
 };

@@ -48,6 +48,7 @@ export interface ScanReport {
   adapters: Record<AdapterName, AdapterReadiness>;
   memory: {
     mempalace: MemoryBackendScan;
+    graphify: MemoryBackendScan;
   };
   notes: string[];
 }
@@ -77,7 +78,7 @@ export interface WizardResult {
   enabledAdapters: AdapterName[];
   defaultAdapter: AdapterName;
   memory: {
-    provider: "expertise" | "mempalace";
+    provider: "expertise" | "mempalace" | "graphify";
   };
   models: InitModels;
   adapterDefaults: Partial<Record<AdapterName, AdapterModelDefaults>>;

@@ -73,7 +73,10 @@ function parseWizardResultFile(path: string): WizardResult {
     enabledAdapters,
     defaultAdapter,
     memory: {
-      provider: parsed.memory?.provider === "mempalace" ? "mempalace" : "expertise",
+      provider:
+        parsed.memory?.provider === "mempalace" || parsed.memory?.provider === "graphify"
+          ? parsed.memory.provider
+          : "expertise",
     },
     models: parsed.models ?? getInitModels(process.cwd()),
     adapterDefaults: parsed.adapterDefaults ?? buildAdapterDefaults(enabledAdapters, { legacyPiModels: parsed.models }),

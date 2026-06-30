@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+### Added
+
+- **Graphify memory provider** — a third pluggable memory backend alongside `mempalace` and the built-in `expertise` fallback. Recall/wake/status are served by graphify's MCP server (`graphify-mcp`, `query_graph`/`graph_stats`); `remember()` writes notes into a corpus dir and (optionally) rebuilds the knowledge graph via `graphify build`. Includes the `graphify-query` skill, `aos init` wizard + env-scanner support, schema, and docs. Falls back to `expertise` when no graph is available.
+
 ## 0.9.1 — Platform stream hardening and memory observability
 
 ### Added

@@ -9,9 +9,10 @@ AOS supports multiple memory backends through the `MemoryProvider` interface:
 | Provider | Backend | Recall Quality | Dependencies |
 |---|---|---|---|
 | **MemPalace** (recommended) | ChromaDB via MCP | Semantic search, 96.6% recall | `pip install mempalace` |
+| **Graphify** | Knowledge graph via MCP (GraphRAG + Leiden + tree-sitter) | Graph-grounded answers over a built corpus | `uv tool install "graphifyy[mcp]"` |
 | **Basic Expertise** (fallback) | In-memory with YAML persistence | Fuzzy matching | None |
 
-MemPalace is the recommended provider. The expertise fallback works without any external dependencies but provides lower recall quality.
+MemPalace is the recommended provider for semantic memory. **Graphify** suits projects that want graph-grounded recall over a corpus of code + docs + notes (it builds a queryable knowledge graph and answers structural/semantic questions). The expertise fallback works without any external dependencies but provides lower recall quality. All three implement the same `MemoryProvider` interface, and the runtime falls back to expertise when a configured external provider is unavailable.
 
 ## Configuration
 
@@ -20,7 +21,7 @@ Memory is configured per-project in `.aos/memory.yaml`, generated automatically 
 ```yaml
 api_version: aos/memory/v1
 
-provider: mempalace           # "mempalace" or "expertise"
+provider: mempalace           # "mempalace", "graphify", or "expertise"
 
 mempalace:
   palace_path: ~/.mempalace/palace
@@ -29,6 +30,15 @@ mempalace:
   auto_hall: true
   max_wake_tokens: 1200       # Hard cap on wake context tokens
   max_drawer_tokens: 500      # Per-memory size limit
+
+graphify:                     # used when provider: graphify
+  corpus_path: .aos/graphify/corpus
+  graph_path: graphify-out/graph.json
+  mcp_command: graphify-mcp
+  build_command: graphify
+  auto_build: false           # rebuild the graph on every remember (LLM cost)
+  max_wake_tokens: 1200
+  max_recall_results: 8
 
 expertise:
   max_lines: 200
@@ -55,6 +65,27 @@ mempalace mine ~/projects/myapp
 # Configure AOS to use MemPalace
 # Edit .aos/memory.yaml and set provider: mempalace
 ```
+
+## Setting Up Graphify
+
+```bash
+# Install graphify with the MCP extra
+uv tool install "graphifyy[mcp]"
+
+# Build a knowledge graph from your corpus (code + docs + notes)
+graphify build .aos/graphify/corpus
+
+# Configure AOS to use Graphify
+# Edit .aos/memory.yaml and set provider: graphify
+```
+
+Graphify's MCP server serves an already-built graph, so build the graph before
+selecting the provider (the runtime falls back to expertise until one exists).
+`remember()` writes notes into `corpus_path`; set `auto_build: true` to rebuild the
+graph on each write, or rebuild on a schedule with `graphify build`. Operational
+agents query the graph through the `graphify-query` skill (`query_graph`,
+`graph_stats`, `get_node`, `get_neighbors`, `get_community`, `god_nodes`,
+`shortest_path`).
 
 MemPalace stores memories using a spatial metaphor:
 

@@ -18,7 +18,7 @@ The harness ships with:
 - 15 agent personas with distinct cognitive biases and reasoning frameworks
 - 9 orchestration profiles, including strategic-council, cto-execution, security-review, delivery-ops, architecture-review, incident-response, dev-execution, design-variations, and paperclip-worker (the Paperclip control-plane seam)
 - 5 domain packs (SaaS, healthcare, fintech, platform-engineering, personal-decisions)
-- 5 skill definitions (code-review, security-scan, task-decomposition, mempalace-read-write, mempalace-admin)
+- 6 skill definitions (code-review, security-scan, task-decomposition, mempalace-read-write, mempalace-admin, graphify-query)
 - Platform adapters for Pi CLI, Claude Code, Codex, Gemini, and other compatible runtimes
 
 ---
@@ -224,7 +224,7 @@ aos-harness/
     agents/           # 15 agent personas (orchestrators, perspectives, operational)
     profiles/         # 9 orchestration profiles
     domains/          # 5 domain knowledge packs
-    skills/           # 5 skill definitions (aos/skill/v1)
+    skills/           # 6 skill definitions (aos/skill/v1)
     workflows/        # 9 workflow definitions
     schema/           # JSON Schema for validation
     briefs/           # Sample briefs
@@ -261,7 +261,7 @@ AOS Harness includes advanced features for production orchestration:
 | [Dev Execution](docs/dev-execution/README.md) | Brief to working code in one session | Planning + hierarchical implementation |
 | [Domain Enforcement](docs/domain-enforcement/README.md) | Structural file/tool permission boundaries per agent | Path matching, tool allowlists, bash restrictions |
 | [Hierarchical Delegation](docs/hierarchical-delegation/README.md) | Agents spawn and manage sub-agents in Lead→Worker chains | Depth limits, domain inheritance |
-| [Memory System](docs/persistent-expertise/README.md) | Pluggable memory with MemPalace and expertise fallback | Orchestrator-gated recall, session curation, MCP integration |
+| [Memory System](docs/persistent-expertise/README.md) | Pluggable memory: MemPalace, Graphify knowledge-graph, and built-in expertise | Orchestrator-gated recall, session curation, MCP integration |
 | [Event Summarization](docs/event-summarization/README.md) | Template summaries plus LLM-needed classification | Platform LLM batching is planned |
 | [Session Checkpointing](docs/session-resumption/README.md) | Pause checkpoints with conversation tails | Full automatic resume is planned |
 

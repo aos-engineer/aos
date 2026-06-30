@@ -63,6 +63,23 @@ export interface MempalaceConfig {
   maxDrawerTokens: number;
 }
 
+export interface GraphifyConfig {
+  /** Directory graphify indexes into a knowledge graph (notes + opt. project files). */
+  corpusPath: string;
+  /** The built graph JSON the MCP server serves. */
+  graphPath: string;
+  /** MCP stdio server entrypoint (default "graphify-mcp"). */
+  mcpCommand: string;
+  /** CLI used for `graphify build` (default "graphify"). */
+  buildCommand: string;
+  /** Rebuild the graph from the corpus on remember(). */
+  autoBuild: boolean;
+  /** Token budget for wake context. */
+  maxWakeTokens: number;
+  /** Max entries returned by recall. */
+  maxRecallResults: number;
+}
+
 /**
  * Memory-specific expertise config (camelCase convention).
  * Separate from ExpertiseConfig in types.ts which uses snake_case
@@ -80,8 +97,9 @@ export interface OrchestratorMemoryConfig {
 }
 
 export interface MemoryConfig {
-  provider: "mempalace" | "expertise";
+  provider: "mempalace" | "expertise" | "graphify";
   mempalace?: MempalaceConfig;
+  graphify?: GraphifyConfig;
   expertise?: ExpertiseMemoryConfig;
   orchestrator: OrchestratorMemoryConfig;
 }

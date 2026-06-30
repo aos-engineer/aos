@@ -431,6 +431,11 @@ export async function scanEnvironment(options: ScanEnvironmentOptions = {}): Pro
     notes.push(`mempalace: binary found at ${mempalaceBinary}, but socket ${socketPath} was not detected. Set MEMPALACE_SOCKET if MemPalace uses a custom socket path.`);
   }
 
+  const graphifyBinary = findBinary("graphify");
+  if (graphifyBinary) {
+    notes.push(`graphify: binary found at ${graphifyBinary}. Build a graph with \`graphify build\` before selecting the graphify memory provider.`);
+  }
+
   return {
     packageManager: detectPackageManager(),
     adapters,
@@ -440,6 +445,12 @@ export async function scanEnvironment(options: ScanEnvironmentOptions = {}): Pro
         socketPath,
         binaryInstalled: !!mempalaceBinary,
         binaryPath: mempalaceBinary ?? undefined,
+      },
+      graphify: {
+        available: !!graphifyBinary,
+        socketPath: "",
+        binaryInstalled: !!graphifyBinary,
+        binaryPath: graphifyBinary ?? undefined,
       },
     },
     notes,

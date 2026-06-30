@@ -5,7 +5,19 @@
   "required": ["api_version", "provider", "orchestrator"],
   "properties": {
     "api_version": { "const": "aos/memory/v1" },
-    "provider": { "type": "string", "enum": ["mempalace", "expertise"] },
+    "provider": { "type": "string", "enum": ["mempalace", "expertise", "graphify"] },
+    "graphify": {
+      "type": "object",
+      "properties": {
+        "corpus_path": { "type": "string", "default": ".aos/graphify/corpus" },
+        "graph_path": { "type": "string", "default": "graphify-out/graph.json" },
+        "mcp_command": { "type": "string", "default": "graphify-mcp" },
+        "build_command": { "type": "string", "default": "graphify" },
+        "auto_build": { "type": "boolean", "default": false },
+        "max_wake_tokens": { "type": "integer", "minimum": 100, "default": 1200 },
+        "max_recall_results": { "type": "integer", "minimum": 1, "default": 8 }
+      }
+    },
     "mempalace": {
       "type": "object",
       "required": ["palace_path", "project_wing"],

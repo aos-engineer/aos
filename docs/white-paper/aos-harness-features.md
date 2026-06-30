@@ -61,7 +61,7 @@ The harness addresses a fundamental limitation in current AI tooling: single-age
 | Orchestration Profiles | 8 (strategic-council, cto-execution, security-review, delivery-ops, architecture-review, incident-response, dev-execution, design-variations) |
 | Domain Packs | 5 (SaaS, healthcare, fintech, platform-engineering, personal-decisions) |
 | Workflow Definitions | 9 (brainstorm, plan, execute, review, debug, verify, cto-execution, dev-execution, design-variations) |
-| Skills | 5 (code-review, security-scan, task-decomposition, mempalace-read-write, mempalace-admin) |
+| Skills | 6 (code-review, security-scan, task-decomposition, mempalace-read-write, mempalace-admin, graphify-query) |
 | Runtime Size | ~2,000 lines TypeScript |
 | Test Coverage | 70+ test files, including 400+ passing runtime tests |
 
@@ -1312,7 +1312,7 @@ aos-harness/
       auditor/             # Institutional learning bias
     profiles/              # 6 orchestration profiles
     domains/               # 5 domain knowledge packs
-    skills/                # 3 skill definitions
+    skills/                # 6 skill definitions
     workflows/             # 7 workflow definitions
     schema/                # JSON Schema validation
     briefs/                # Sample input briefs

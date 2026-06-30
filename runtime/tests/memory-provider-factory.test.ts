@@ -68,3 +68,62 @@ describe("createRuntimeMemoryProvider", () => {
     ).rejects.toThrow("MemPalace provider configured but unavailable");
   });
 });
+
+const graphifyYaml = `api_version: aos/memory/v1
+provider: graphify
+graphify:
+  corpus_path: .aos/graphify/corpus
+  graph_path: graphify-out/graph.json
+  auto_build: false
+orchestrator:
+  remember_prompt: session_end
+  recall_gate: true
+  max_recall_per_session: 10
+`;
+
+describe("createRuntimeMemoryProvider (graphify)", () => {
+  it("creates a Graphify provider when the configured MCP process starts", async () => {
+    const projectDir = makeProject(graphifyYaml);
+    const memory = await createRuntimeMemoryProvider(projectDir, {
+      graphifyCommand: process.execPath,
+      graphifyArgs: ["-e", "setInterval(() => {}, 1000);"],
+    });
+
+    try {
+      expect(memory.providerId).toBe("graphify");
+      expect(memory.configuredProvider).toBe("graphify");
+      expect(memory.provider.id).toBe("graphify");
+    } finally {
+      await memory.shutdown();
+    }
+  });
+
+  it("falls back to expertise when graphify is unavailable by default", async () => {
+    const projectDir = makeProject(graphifyYaml);
+    const warnings: string[] = [];
+
+    const memory = await createRuntimeMemoryProvider(projectDir, {
+      graphifyCommand: process.execPath,
+      graphifyArgs: ["-e", "process.exit(1);"],
+      onWarning: (message) => warnings.push(message),
+    });
+
+    expect(memory.providerId).toBe("expertise");
+    expect(memory.configuredProvider).toBe("graphify");
+    expect(memory.provider.id).toBe("expertise");
+    expect(warnings[0]).toContain("Falling back");
+    await memory.shutdown();
+  });
+
+  it("throws in strict mode when configured graphify is unavailable", async () => {
+    const projectDir = makeProject(graphifyYaml);
+
+    await expect(
+      createRuntimeMemoryProvider(projectDir, {
+        graphifyCommand: process.execPath,
+        graphifyArgs: ["-e", "process.exit(1);"],
+        requireConfiguredProvider: true,
+      }),
+    ).rejects.toThrow("Graphify provider configured but unavailable");
+  });
+});

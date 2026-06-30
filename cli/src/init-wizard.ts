@@ -184,13 +184,13 @@ export async function runWizard(
   }
 
   const recommendedMemoryProvider = scan.memory.mempalace.available ? "mempalace" : "expertise";
-  let memoryProvider: "expertise" | "mempalace";
+  let memoryProvider: "expertise" | "mempalace" | "graphify";
   if (existingMemoryProvider && existingMemoryProvider === recommendedMemoryProvider) {
     memoryProvider = existingMemoryProvider;
   } else {
     const initialMemoryProvider = existingMemoryProvider ?? recommendedMemoryProvider;
     memoryProvider = requirePromptValue(
-      await promptContext.select<"expertise" | "mempalace">({
+      await promptContext.select<"expertise" | "mempalace" | "graphify">({
         message: "Choose the memory provider",
         options: [
           {
@@ -199,6 +199,13 @@ export async function runWizard(
             hint: scan.memory.mempalace.available
               ? "MemPalace socket detected"
               : "Configure MemPalace later",
+          },
+          {
+            value: "graphify",
+            label: "graphify",
+            hint: scan.memory.graphify.available
+              ? "graphify CLI detected — knowledge-graph recall"
+              : "Knowledge-graph recall (install graphifyy + build a graph)",
           },
           {
             value: "expertise",

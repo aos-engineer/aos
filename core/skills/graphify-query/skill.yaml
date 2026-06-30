@@ -1,0 +1,32 @@
+schema: aos/skill/v1
+id: graphify-query
+name: Graphify Knowledge-Graph Query
+description: Query the project knowledge graph (semantic + structural) via graphify
+version: 1.0.0
+
+input:
+  required: []
+  optional: []
+
+output:
+  structured_result: true
+
+compatible_agents:
+  - architect
+  - operator
+  - auditor
+
+platform_bindings:
+  claude-code: null
+  pi: graphify-mcp
+
+platform_requirements:
+  requires_network: false
+  requires_tools:
+    - query_graph
+    - graph_stats
+    - get_node
+    - get_neighbors
+    - get_community
+    - god_nodes
+    - shortest_path

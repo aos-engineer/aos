@@ -96,6 +96,53 @@ orchestrator:
     expect(config.mempalace!.maxDrawerTokens).toBe(500);
   });
 
+  it("loads a graphify config and applies defaults", () => {
+    const dir = makeTempDir();
+    const aosDir = join(dir, ".aos");
+    mkdirSync(aosDir, { recursive: true });
+    writeFileSync(
+      join(aosDir, "memory.yaml"),
+      `api_version: aos/memory/v1
+provider: graphify
+graphify:
+  corpus_path: .aos/graphify/corpus
+  auto_build: true
+orchestrator:
+  remember_prompt: session_end
+  recall_gate: true
+  max_recall_per_session: 10
+`,
+    );
+    const config = loadMemoryConfig(dir);
+    expect(config.provider).toBe("graphify");
+    expect(config.graphify!.corpusPath).toBe(".aos/graphify/corpus");
+    expect(config.graphify!.autoBuild).toBe(true);
+    // defaults
+    expect(config.graphify!.graphPath).toBe("graphify-out/graph.json");
+    expect(config.graphify!.mcpCommand).toBe("graphify-mcp");
+    expect(config.graphify!.maxWakeTokens).toBe(1200);
+    expect(config.graphify!.maxRecallResults).toBe(8);
+  });
+
+  it("populates graphify defaults even with no graphify block", () => {
+    const dir = makeTempDir();
+    const aosDir = join(dir, ".aos");
+    mkdirSync(aosDir, { recursive: true });
+    writeFileSync(
+      join(aosDir, "memory.yaml"),
+      `api_version: aos/memory/v1
+provider: graphify
+orchestrator:
+  remember_prompt: session_end
+  recall_gate: true
+  max_recall_per_session: 10
+`,
+    );
+    const config = loadMemoryConfig(dir);
+    expect(config.graphify!.corpusPath).toBe(".aos/graphify/corpus");
+    expect(config.graphify!.autoBuild).toBe(false);
+  });
+
   it("throws MemoryConfigError for invalid api_version", () => {
     const dir = makeTempDir();
     const aosDir = join(dir, ".aos");

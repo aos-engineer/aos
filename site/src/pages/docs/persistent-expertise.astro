@@ -5,6 +5,7 @@ const sidebarLinks = [
   { id: 'providers', label: 'Providers' },
   { id: 'configuration', label: 'Configuration' },
   { id: 'mempalace-setup', label: 'Setting Up MemPalace' },
+  { id: 'graphify-setup', label: 'Setting Up Graphify' },
   { id: 'how-memory-works', label: 'How Memory Works' },
   { id: 'agent-access-tiers', label: 'Agent Access Tiers' },
   { id: 'crash-recovery', label: 'Crash Recovery' },
@@ -16,7 +17,7 @@ const sidebarLinks = [
 <Docs title="Memory System" sidebarLinks={sidebarLinks}>
   <!-- Page Header -->
         <h1 class="text-4xl md:text-[48px] font-extrabold text-[var(--color-text)] leading-tight tracking-tight">Memory System</h1>
-        <p class="text-[15px] text-[var(--color-text-secondary)] mt-2 mb-12">Pluggable memory with MemPalace and expertise fallback. Orchestrator-gated recall and session curation.</p>
+        <p class="text-[15px] text-[var(--color-text-secondary)] mt-2 mb-12">Pluggable memory: MemPalace, Graphify knowledge-graph, and built-in expertise. Orchestrator-gated recall and session curation.</p>
 
         <!-- Providers -->
         <section id="providers" class="mb-12">
@@ -45,6 +46,12 @@ const sidebarLinks = [
                     <td class="px-4 py-3">Semantic search, 96.6% recall</td>
                     <td class="px-4 py-3"><code>pip install mempalace</code></td>
                   </tr>
+                  <tr class="border-b border-[var(--color-border)]">
+                    <td class="px-4 py-3"><strong class="text-[var(--color-text)]">Graphify</strong></td>
+                    <td class="px-4 py-3">Knowledge graph via MCP (GraphRAG + Leiden + tree-sitter)</td>
+                    <td class="px-4 py-3">Graph-grounded answers over a built corpus</td>
+                    <td class="px-4 py-3"><code>uv tool install "graphifyy[mcp]"</code></td>
+                  </tr>
                   <tr>
                     <td class="px-4 py-3"><strong class="text-[var(--color-text)]">Basic Expertise</strong> (fallback)</td>
                     <td class="px-4 py-3">In-memory with YAML persistence</td>
@@ -57,7 +64,7 @@ const sidebarLinks = [
           </div>
 
           <p class="text-[15px] text-[var(--color-text-secondary)] leading-relaxed">
-            MemPalace is the recommended provider. The expertise fallback works without any external dependencies but provides lower recall quality.
+            MemPalace is the recommended provider for semantic memory. Graphify suits projects that want graph-grounded recall over a corpus of code, docs, and notes. The expertise fallback works without any external dependencies but provides lower recall quality. All three implement the same <code>MemoryProvider</code> interface, and the runtime falls back to expertise when a configured external provider is unavailable.
           </p>
         </section>
 
@@ -71,7 +78,7 @@ const sidebarLinks = [
           </p>
           <pre><code>{`api_version: aos/memory/v1
 
-provider: mempalace           # "mempalace" or "expertise"
+provider: mempalace           # "mempalace", "graphify", or "expertise"
 
 mempalace:
   palace_path: ~/.mempalace/palace
@@ -80,6 +87,12 @@ mempalace:
   auto_hall: true
   max_wake_tokens: 1200       # Hard cap on wake context tokens
   max_drawer_tokens: 500      # Per-memory size limit
+
+graphify:                     # used when provider: graphify
+  corpus_path: .aos/graphify/corpus
+  graph_path: graphify-out/graph.json
+  auto_build: false           # rebuild the graph on each remember (LLM cost)
+  max_recall_results: 8
 
 expertise:
   max_lines: 200
@@ -147,6 +160,25 @@ mempalace mine ~/projects/myapp
               </table>
             </div>
           </div>
+        </section>
+
+        <!-- Setting Up Graphify -->
+        <section id="graphify-setup" class="mb-12">
+          <div class="border-t border-[var(--color-border)] pt-12 mb-6">
+            <h2 class="text-2xl md:text-[28px] font-bold text-[var(--color-text)]">Setting Up Graphify</h2>
+          </div>
+          <pre><code>{`# Install graphify with the MCP extra
+uv tool install "graphifyy[mcp]"
+
+# Build a knowledge graph from your corpus (code + docs + notes)
+graphify build .aos/graphify/corpus
+
+# Configure AOS to use Graphify
+# Edit .aos/memory.yaml and set provider: graphify`}</code></pre>
+
+          <p class="text-[15px] text-[var(--color-text-secondary)] leading-relaxed mt-6">
+            Graphify's MCP server serves an already-built graph, so build the graph before selecting the provider (the runtime falls back to expertise until one exists). <code>remember()</code> writes notes into <code>corpus_path</code>; set <code>auto_build: true</code> to rebuild on each write, or rebuild on a schedule with <code>graphify build</code>. Operational agents query the graph through the <code>graphify-query</code> skill.
+          </p>
         </section>
 
         <!-- How Memory Works -->

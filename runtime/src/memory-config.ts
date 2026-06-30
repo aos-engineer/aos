@@ -28,6 +28,16 @@ const MEMPALACE_DEFAULTS = {
   maxDrawerTokens: 500,
 };
 
+const GRAPHIFY_DEFAULTS = {
+  corpusPath: ".aos/graphify/corpus",
+  graphPath: "graphify-out/graph.json",
+  mcpCommand: "graphify-mcp",
+  buildCommand: "graphify",
+  autoBuild: false,
+  maxWakeTokens: 1200,
+  maxRecallResults: 8,
+};
+
 export function loadMemoryConfig(projectDir: string): MemoryConfig {
   const configPath = join(projectDir, ".aos", "memory.yaml");
 
@@ -55,13 +65,18 @@ export function loadMemoryConfig(projectDir: string): MemoryConfig {
     );
   }
 
-  const provider = parsed.provider as string;
-  if (provider !== "mempalace" && provider !== "expertise") {
+  const providerRaw = parsed.provider;
+  if (
+    providerRaw !== "mempalace" &&
+    providerRaw !== "expertise" &&
+    providerRaw !== "graphify"
+  ) {
     throw new MemoryConfigError(
-      `Invalid provider "${provider}", expected "mempalace" or "expertise"`,
+      `Invalid provider "${String(providerRaw)}", expected "mempalace", "expertise", or "graphify"`,
       configPath,
     );
   }
+  const provider = providerRaw as "mempalace" | "expertise" | "graphify";
 
   const orch = parsed.orchestrator as Record<string, unknown> | undefined;
   const orchestrator = {
@@ -85,6 +100,19 @@ export function loadMemoryConfig(projectDir: string): MemoryConfig {
         (mp.max_wake_tokens as number) ?? MEMPALACE_DEFAULTS.maxWakeTokens,
       maxDrawerTokens:
         (mp.max_drawer_tokens as number) ?? MEMPALACE_DEFAULTS.maxDrawerTokens,
+    };
+  }
+
+  if (provider === "graphify") {
+    const g = (parsed.graphify as Record<string, unknown> | undefined) ?? {};
+    config.graphify = {
+      corpusPath: (g.corpus_path as string) ?? GRAPHIFY_DEFAULTS.corpusPath,
+      graphPath: (g.graph_path as string) ?? GRAPHIFY_DEFAULTS.graphPath,
+      mcpCommand: (g.mcp_command as string) ?? GRAPHIFY_DEFAULTS.mcpCommand,
+      buildCommand: (g.build_command as string) ?? GRAPHIFY_DEFAULTS.buildCommand,
+      autoBuild: (g.auto_build as boolean) ?? GRAPHIFY_DEFAULTS.autoBuild,
+      maxWakeTokens: (g.max_wake_tokens as number) ?? GRAPHIFY_DEFAULTS.maxWakeTokens,
+      maxRecallResults: (g.max_recall_results as number) ?? GRAPHIFY_DEFAULTS.maxRecallResults,
     };
   }
 
