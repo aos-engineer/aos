@@ -99,7 +99,7 @@ Release line:
 
 - Current repo version: `0.9.1`
 - npm latest is published separately via the tag-driven release workflow
-- Site image tag: `novashock/aos-harness-site:0.9.1-20260613-interop-security-docs`
+- Site image tag: `novashock/aos-harness-site:0.9.1-20260629-graphify`
 
 `aos init` prints the adapter install commands at the end as a reminder.
 It also scans vendor CLI readiness, writes v2 `.aos/config.yaml`, creates a project-local Pi extension shim when Pi is enabled, and supports:
