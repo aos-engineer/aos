@@ -232,5 +232,73 @@
       "source": "https://github.com/aos-engineer/harness",
       "version": "0.1.0"
     }
+  ],
+  "skills": [
+    {
+      "id": "aos/code-review",
+      "name": "Code Review",
+      "author": "aos-harness",
+      "description": "Reviews code artifacts against quality standards and security best practices, producing a structured report of issues and recommendations.",
+      "tags": ["code-review", "quality", "security", "engineering"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0",
+      "compatible_agents": ["sentinel", "architect", "operator"],
+      "schema_version": "aos/skill/v1"
+    },
+    {
+      "id": "aos/security-scan",
+      "name": "Security Scan",
+      "author": "aos-harness",
+      "description": "Scans architecture and code for security vulnerabilities, compliance gaps, and risk factors, with severity ratings and remediation.",
+      "tags": ["security", "vulnerability", "compliance", "risk"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0",
+      "compatible_agents": ["sentinel", "steward"],
+      "schema_version": "aos/skill/v1"
+    },
+    {
+      "id": "aos/task-decomposition",
+      "name": "Task Decomposition",
+      "author": "aos-harness",
+      "description": "Breaks phases and architecture into concrete engineering tasks with effort estimates, dependencies, and acceptance criteria.",
+      "tags": ["planning", "task-breakdown", "estimation", "delivery"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0",
+      "compatible_agents": ["operator", "strategist"],
+      "schema_version": "aos/skill/v1"
+    },
+    {
+      "id": "aos/graphify-query",
+      "name": "Graphify Knowledge-Graph Query",
+      "author": "aos-harness",
+      "description": "Queries the project knowledge graph (semantic and structural) via graphify to ground analysis in the real codebase.",
+      "tags": ["knowledge-graph", "query", "codebase", "context"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0",
+      "compatible_agents": ["architect", "operator", "auditor"],
+      "schema_version": "aos/skill/v1"
+    },
+    {
+      "id": "aos/mempalace-read-write",
+      "name": "MemPalace Read + Write",
+      "author": "aos-harness",
+      "description": "Searches, inspects, and adds drawers to MemPalace, giving agents persistent institutional memory across sessions.",
+      "tags": ["memory", "mempalace", "read-write", "context"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0",
+      "compatible_agents": ["operator", "steward", "auditor"],
+      "schema_version": "aos/skill/v1"
+    },
+    {
+      "id": "aos/mempalace-admin",
+      "name": "MemPalace Admin",
+      "author": "aos-harness",
+      "description": "Full administrative access to all MemPalace tools (explicit opt-in only) for institutional-memory maintenance.",
+      "tags": ["memory", "mempalace", "admin", "governance"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0",
+      "compatible_agents": ["auditor"],
+      "schema_version": "aos/skill/v1"
+    }
   ]
 }

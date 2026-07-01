@@ -2,9 +2,9 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://aos-harness.dev/registry.schema.json",
   "title": "AOS Community Registry",
-  "description": "Schema for validating AOS community registry entries (agents, profiles, domains).",
+  "description": "Schema for validating AOS community registry entries (agents, profiles, domains, skills).",
   "type": "object",
-  "required": ["version", "agents", "profiles", "domains"],
+  "required": ["version", "agents", "profiles", "domains", "skills"],
   "additionalProperties": false,
   "properties": {
     "version": {
@@ -23,6 +23,11 @@
     "domains": {
       "type": "array",
       "items": { "$ref": "#/$defs/domain" },
+      "uniqueItems": true
+    },
+    "skills": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/skill" },
       "uniqueItems": true
     }
   },
@@ -95,6 +100,29 @@
         },
         "source": { "type": "string", "format": "uri" },
         "version": { "$ref": "#/$defs/semver" }
+      }
+    },
+    "skill": {
+      "type": "object",
+      "required": ["id", "name", "author", "description", "tags", "source", "version", "compatible_agents", "schema_version"],
+      "additionalProperties": false,
+      "properties": {
+        "id": { "$ref": "#/$defs/namespace_id" },
+        "name": { "type": "string", "minLength": 1 },
+        "author": { "type": "string", "minLength": 1 },
+        "description": { "type": "string", "maxLength": 200 },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "minItems": 1
+        },
+        "source": { "type": "string", "format": "uri" },
+        "version": { "$ref": "#/$defs/semver" },
+        "compatible_agents": {
+          "type": "array",
+          "items": { "type": "string" }
+        },
+        "schema_version": { "type": "string" }
       }
     }
   }
