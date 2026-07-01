@@ -1,7 +1,37 @@
 import { createServer, Socket } from "node:net";
 import { unlinkSync, existsSync } from "node:fs";
+import { createHash } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 
 const MAX_REQUEST_BYTES = 1024 * 1024;
+
+// Unix domain socket paths are capped by the OS (sun_path is 104 bytes on
+// macOS, 108 on Linux, including the NUL terminator). A deep macOS $TMPDIR
+// (/var/folders/../T ≈ 48 chars) plus a long, human-readable session id
+// (`<date>-<profile>-<rand>`, ~40 chars for `architecture-review`) overflows
+// that cap and `listen()` fails. Keep this comfortably under the smaller cap.
+const MAX_SOCKET_PATH_BYTES = 100;
+
+/**
+ * Build a short, collision-resistant Unix socket path for the arbiter bridge.
+ *
+ * The session id is hashed to a fixed 16-hex-char token so the file name is a
+ * constant 25 bytes (`aos-<16hex>.sock`) regardless of how long the profile
+ * name is — long profile ids like `architecture-review` no longer blow the
+ * 104-byte sun_path limit. If the resolved `$TMPDIR` is itself deep enough to
+ * overflow the cap, fall back to `/tmp` (short and world-writable) so the
+ * bridge binds on any TMPDIR without the caller needing `TMPDIR=/tmp`.
+ */
+export function bridgeSocketPath(sessionId: string, dir: string = tmpdir()): string {
+  const token = createHash("sha1").update(sessionId).digest("hex").slice(0, 16);
+  const name = `aos-${token}.sock`;
+  const full = join(dir, name);
+  if (Buffer.byteLength(full) > MAX_SOCKET_PATH_BYTES && dir !== "/tmp") {
+    return join("/tmp", name);
+  }
+  return full;
+}
 const METHODS = ["delegate", "end", "aos_recall", "aos_remember"] as const;
 type BridgeMethod = typeof METHODS[number];
 

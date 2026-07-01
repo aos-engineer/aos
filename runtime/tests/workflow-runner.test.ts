@@ -1347,3 +1347,170 @@ describe("WorkflowRunner — executeWithTools agent resolution", () => {
     expect(runner).toBeDefined();
   });
 });
+
+// ── Brief injection (Bug 3) ─────────────────────────────────────────
+
+describe("brief injection into workflow steps", () => {
+  function mockResponse(text: string): AgentResponse {
+    return { text, tokensIn: 1, tokensOut: 1, cost: 0, contextTokens: 0, model: "m", status: "success" };
+  }
+  function capturingDelegate() {
+    const prompts: string[] = [];
+    const delegate: DelegationDelegate = {
+      delegateToAgents: async (ids: string[], message: string) => {
+        prompts.push(message);
+        return ids.map((id) => mockResponse(`ok ${id}`));
+      },
+      delegateTensionPair: async (a: string, b: string, message: string) => {
+        prompts.push(message);
+        return [mockResponse("a"), mockResponse("b")];
+      },
+      delegateToOrchestrator: async (message: string) => {
+        prompts.push(message);
+        return mockResponse("synth");
+      },
+      delegateDirect: async (id: string, message: string) => {
+        prompts.push(message);
+        return mockResponse("remote");
+      },
+    };
+    return { delegate, prompts };
+  }
+
+  const BRIEF = "## Feature\nBuild a widget exporter.\n## Success\nExports run under 2s.";
+
+  it("prepends the brief to a step prompt that does not reference {{brief}}", async () => {
+    const adapter = new MockAdapter();
+    const { delegate, prompts } = capturingDelegate();
+    const config: WorkflowConfig = {
+      schema: "aos/workflow/v1",
+      id: "brief-test",
+      name: "Test",
+      description: "Test",
+      steps: [{
+        id: "understand",
+        action: "targeted-delegation",
+        agents: ["advocate"],
+        prompt: "Analyze this feature request.",
+        input: [],
+        output: "requirements",
+        review_gate: false,
+      }],
+      gates: [],
+    };
+    const runner = new WorkflowRunner(config, adapter, { delegationDelegate: delegate, brief: BRIEF });
+    await runner.execute();
+
+    expect(prompts).toHaveLength(1);
+    expect(prompts[0]).toContain("Build a widget exporter.");
+    expect(prompts[0]).toContain("Analyze this feature request.");
+  });
+
+  it("resolves an explicit {{brief}} reference without duplicating the brief", async () => {
+    const adapter = new MockAdapter();
+    const { delegate, prompts } = capturingDelegate();
+    const config: WorkflowConfig = {
+      schema: "aos/workflow/v1",
+      id: "brief-var-test",
+      name: "Test",
+      description: "Test",
+      steps: [{
+        id: "understand",
+        action: "targeted-delegation",
+        agents: ["advocate"],
+        prompt: "Here is the brief:\n{{brief}}\nNow analyze it.",
+        input: [],
+        output: "requirements",
+        review_gate: false,
+      }],
+      gates: [],
+    };
+    const runner = new WorkflowRunner(config, adapter, { delegationDelegate: delegate, brief: BRIEF });
+    await runner.execute();
+
+    expect(prompts[0]).toContain("Build a widget exporter.");
+    // {{brief}} expanded, so the runner must NOT also prepend a second copy.
+    const occurrences = prompts[0].split("Build a widget exporter.").length - 1;
+    expect(occurrences).toBe(1);
+  });
+
+  it("leaves prompts unchanged when no brief is provided", async () => {
+    const adapter = new MockAdapter();
+    const { delegate, prompts } = capturingDelegate();
+    const config: WorkflowConfig = {
+      schema: "aos/workflow/v1",
+      id: "no-brief-test",
+      name: "Test",
+      description: "Test",
+      steps: [{
+        id: "understand",
+        action: "targeted-delegation",
+        agents: ["advocate"],
+        prompt: "Analyze this feature request.",
+        input: [],
+        output: "requirements",
+        review_gate: false,
+      }],
+      gates: [],
+    };
+    const runner = new WorkflowRunner(config, adapter, { delegationDelegate: delegate });
+    await runner.execute();
+
+    expect(prompts[0]).not.toContain("## Brief");
+    expect(prompts[0]).toContain("Analyze this feature request.");
+  });
+});
+
+// ── Auto-approve gates (Bug 4) ──────────────────────────────────────
+
+describe("autoApprove non-interactive gates", () => {
+  function gateConfig(onRejection: "re-run-step" | "retry_with_feedback"): WorkflowConfig {
+    return {
+      schema: "aos/workflow/v1",
+      id: "gate-auto-test",
+      name: "Test",
+      description: "Test",
+      steps: [{
+        id: "understand",
+        action: "gather",
+        prompt: "do it",
+        input: [],
+        output: "requirements",
+        review_gate: true,
+      }],
+      gates: [{
+        after: "understand",
+        type: "user-approval",
+        prompt: "Approve?",
+        on_rejection: onRejection,
+      }],
+    };
+  }
+
+  it("passes a user-approval gate without calling promptConfirm (re-run-step)", async () => {
+    const adapter = new MockAdapter();
+    const runner = new WorkflowRunner(gateConfig("re-run-step"), adapter, { autoApprove: true });
+    await runner.execute();
+    const confirmCalls = adapter.calls.filter((c) => c.method === "promptConfirm");
+    expect(confirmCalls).toHaveLength(0);
+  });
+
+  it("passes a retry_with_feedback gate without calling promptConfirm", async () => {
+    const adapter = new MockAdapter();
+    const runner = new WorkflowRunner(gateConfig("retry_with_feedback"), adapter, { autoApprove: true });
+    await runner.execute();
+    const confirmCalls = adapter.calls.filter((c) => c.method === "promptConfirm");
+    const inputCalls = adapter.calls.filter((c) => c.method === "promptInput");
+    expect(confirmCalls).toHaveLength(0);
+    expect(inputCalls).toHaveLength(0);
+  });
+
+  it("still prompts when autoApprove is false", async () => {
+    const adapter = new MockAdapter();
+    // MockAdapter.promptConfirm returns true, so execution proceeds.
+    const runner = new WorkflowRunner(gateConfig("re-run-step"), adapter, { autoApprove: false });
+    await runner.execute();
+    const confirmCalls = adapter.calls.filter((c) => c.method === "promptConfirm");
+    expect(confirmCalls).toHaveLength(1);
+  });
+});

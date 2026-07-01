@@ -184,6 +184,26 @@
       "tags": ["security", "assessment", "vulnerability", "remediation"],
       "source": "https://github.com/aos-engineer/harness",
       "version": "0.1.0"
+    },
+    {
+      "id": "aos/cto-execution",
+      "name": "CTO Execution Orchestration",
+      "author": "aos-harness",
+      "description": "Execution profile: a CTO orchestrator drives the full feature lifecycle — requirements, architecture, task breakdown, and risk review — into an engineering-ready execution package.",
+      "agent_count": 7,
+      "tags": ["execution", "orchestration", "planning", "engineering"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0"
+    },
+    {
+      "id": "aos/dev-execution",
+      "name": "Dev Execution",
+      "author": "aos-harness",
+      "description": "Execution profile: planning deliberation plus agent-driven code implementation with hierarchical delegation, code review, and test verification.",
+      "agent_count": 8,
+      "tags": ["execution", "development", "implementation", "code-review"],
+      "source": "https://github.com/aos-engineer/harness",
+      "version": "0.1.0"
     }
   ],
   "domains": [

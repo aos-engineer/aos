@@ -10,7 +10,10 @@ export const EXECUTION_SCHEMA: BriefSchemaDef = {
   requiredSections: ["Feature / Vision", "Context", "Constraints", "Success Criteria"],
   optionalSections: ["Stakeholders", "Out of scope", "Open Questions"],
   aliases: {
-    "Feature / Vision": ["Vision"],
+    // `dev-execution` frames its first section as "Feature / Change" (feature,
+    // bug fix, or refactor of existing code) while `cto-execution` uses
+    // "Feature / Vision". Both are valid execution briefs, so accept either.
+    "Feature / Vision": ["Vision", "Feature / Change"],
   },
 };
 

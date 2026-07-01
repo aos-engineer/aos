@@ -25,7 +25,7 @@ import type {
 } from "./types";
 import { SessionCheckpointManager } from "./session-checkpoint";
 import { ChildAgentManager } from "./child-agent-manager";
-import { loadProfile, loadAgent, loadDomain, loadWorkflow, validateBrief } from "./config-loader";
+import { loadProfile, loadAgent, loadDomain, loadWorkflow, resolveWorkflowFile, validateBrief } from "./config-loader";
 import { DomainEnforcer } from "./domain-enforcer";
 import { ConstraintEngine } from "./constraint-engine";
 import { DelegationRouter } from "./delegation-router";
@@ -46,6 +46,12 @@ export interface EngineOpts {
   projectDir?: string;
   memoryProvider?: MemoryProvider;
   onTranscriptEvent?: (entry: TranscriptEntry) => void | Promise<void>;
+  /**
+   * Non-interactive execution: auto-approve every `user-approval` workflow gate
+   * instead of prompting. Set by `aos run --yes` so execution profiles (which
+   * halt at review gates) can run in CI or an unattended capture.
+   */
+  autoApprove?: boolean;
 }
 
 export class AOSEngine {
@@ -67,6 +73,7 @@ export class AOSEngine {
   private workflowMode: boolean = false;
   private workflowConfig: WorkflowConfig | null = null;
   private workflowsDir: string | null = null;
+  private autoApprove: boolean = false;
   private onTranscriptEvent?: (entry: TranscriptEntry) => void | Promise<void>;
   private childAgentManager: ChildAgentManager;
   private checkpointManager: SessionCheckpointManager;
@@ -167,10 +174,16 @@ export class AOSEngine {
       this.workflowMode = true;
       this.workflowsDir = opts.workflowsDir ?? null;
       if (this.workflowsDir) {
-        const workflowDir = join(this.workflowsDir, this.profile.workflow);
-        this.workflowConfig = loadWorkflow(workflowDir);
+        // Resolve via the shared resolver so the flat `<name>.workflow.yaml`
+        // files (all execution profiles) and the directory convention
+        // (`<id>/workflow.yaml`, paperclip-worker) both load — matching how
+        // `aos run` and `aos validate` locate the same workflow.
+        const workflowFile = resolveWorkflowFile(this.workflowsDir, this.profile.workflow);
+        this.workflowConfig = loadWorkflow(workflowFile);
       }
     }
+
+    this.autoApprove = opts.autoApprove ?? false;
 
     if (opts.memoryProvider) {
       this.memoryProvider = opts.memoryProvider;
@@ -225,12 +238,21 @@ export class AOSEngine {
       const artifactsDir = join(deliberationDir, "artifacts");
       mkdirSync(artifactsDir, { recursive: true });
 
+      // Thread the loaded brief into the workflow so every step prompt is
+      // grounded in the actual feature request. Without this, execution-mode
+      // agents receive an unresolved/absent brief and correctly refuse to
+      // fabricate — leaving the execution package empty (deliberation mode
+      // injects the brief separately, in adapter-session).
+      const briefContent = readFileSync(inputPath, "utf-8");
+
       const runner = new WorkflowRunner(this.workflowConfig, this.adapter, {
         sessionDir: deliberationDir,
         onTranscriptEvent: (e) => this.pushTranscript(e),
         delegationDelegate: this.createDelegationDelegate(),
         profileConfig: this.profile,
         agents: this.agents,    // pass agent configs for executeWithTools resolution
+        brief: briefContent,
+        autoApprove: this.autoApprove,
       });
 
       const results = await runner.execute();

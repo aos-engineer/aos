@@ -18,13 +18,14 @@ ${c.bold("aos run")} — Run a deliberation or execution session
 
 ${c.bold("USAGE")}
   aos run [profile] [--domain <domain>] [--brief <path>] [--verbose] [--dry-run]
-                    [--workflow-dir <path>]
+                    [--workflow-dir <path>] [--yes]
 
 ${c.bold("OPTIONS")}
   --domain <name>       Domain pack to apply (e.g. saas)
   --brief <path>        Path to the brief file
   --verbose             Stream engine decisions to stderr
   --dry-run             Validate config and print simulation summary without launching
+  --yes                 Auto-approve execution-workflow review gates (non-interactive/CI)
   --workflow-dir <path> Directory containing workflow YAML files (default: core/workflows/)
   --platform-url <url> Platform API URL for live observability (e.g. http://localhost:3001)
   --allow-code-execution[=<langs>|none]
@@ -209,7 +210,7 @@ export async function runCommand(args: ParsedArgs): Promise<void> {
     : join(coreDir, "workflows");
 
   // ── Validate brief against profile ───────────────────────────
-  const { loadProfile, loadWorkflow, validateBrief } = await import("@aos-harness/runtime/config-loader");
+  const { loadProfile, loadWorkflow, resolveWorkflowFile, validateBrief } = await import("@aos-harness/runtime/config-loader");
   let profile: ReturnType<typeof loadProfile>;
   try {
     profile = loadProfile(profileDir);
@@ -264,31 +265,19 @@ export async function runCommand(args: ParsedArgs): Promise<void> {
   let workflowConfig: Awaited<ReturnType<typeof loadWorkflow>> | null = null;
 
   if (isExecutionProfile) {
-    // Resolve workflow file from workflowsDir
+    // Resolve workflow file from workflowsDir via the shared resolver so the
+    // CLI, the engine, and `aos validate` all agree on where a workflow lives
+    // (flat `<name>.workflow.yaml` and the `<id>/workflow.yaml` dir convention).
     const workflowId = profile.workflow!;
-    const workflowFile = join(workflowsDir, `${workflowId.replace(/-workflow$/, "")}.workflow.yaml`);
-    const workflowFileAlt = join(workflowsDir, `${workflowId}.workflow.yaml`);
-
-    if (existsSync(workflowFile)) {
-      workflowConfig = loadWorkflow(workflowFile);
-    } else if (existsSync(workflowFileAlt)) {
-      workflowConfig = loadWorkflow(workflowFileAlt);
-    } else {
-      // Try loading by the raw ID name
-      const candidates = existsSync(workflowsDir)
+    try {
+      workflowConfig = loadWorkflow(resolveWorkflowFile(workflowsDir, workflowId));
+    } catch {
+      const available = existsSync(workflowsDir)
         ? readdirSync(workflowsDir).filter((f) => f.endsWith(".workflow.yaml"))
         : [];
-      const match = candidates.find((f) => {
-        const loaded = loadWorkflow(join(workflowsDir, f));
-        return loaded.id === workflowId;
-      });
-      if (match) {
-        workflowConfig = loadWorkflow(join(workflowsDir, match));
-      } else {
-        console.error(c.red(`Workflow "${workflowId}" not found in ${workflowsDir}`));
-        console.error(c.yellow(`Available workflow files: ${candidates.join(", ") || "none"}`));
-        process.exit(1);
-      }
+      console.error(c.red(`Workflow "${workflowId}" not found in ${workflowsDir}`));
+      console.error(c.yellow(`Available workflow files: ${available.join(", ") || "none"}`));
+      process.exit(1);
     }
   }
 
@@ -509,6 +498,9 @@ ${c.bold(`AOS ${sessionType} Session`)}
       env.AOS_WORKFLOW_ID = workflowConfig.id;
       env.AOS_WORKFLOWS_DIR = workflowsDir;
     }
+    if (args.flags.yes) {
+      env.AOS_AUTO_APPROVE = "1";
+    }
     // Pass the resolved ToolPolicy to the Pi adapter as JSON. The Pi adapter
     // runs in a separate process; this env var is the contract consumed by
     // BaseWorkflow for tool gating and tool-denied transcript events.
@@ -544,6 +536,7 @@ ${c.bold(`AOS ${sessionType} Session`)}
       useVendorDefaultModel: runtimeModelConfig.useVendorDefaultModel,
       toolPolicy,
       platformUrl: platformUrl ?? undefined,
+      autoApprove: !!args.flags.yes,
       agentTimeoutMs:
         typeof profile.error_handling?.agent_timeout_seconds === "number"
           ? profile.error_handling.agent_timeout_seconds * 1000

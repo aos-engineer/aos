@@ -1,9 +1,10 @@
 import { describe, it, expect } from "bun:test";
 import { join } from "node:path";
 import { writeFileSync, mkdirSync, rmSync } from "node:fs";
-import { loadAgent, loadProfile, loadDomain, loadWorkflow, loadSkill, validateBrief } from "../src/config-loader";
+import { loadAgent, loadProfile, loadDomain, loadWorkflow, loadSkill, resolveWorkflowFile, validateBrief } from "../src/config-loader";
 
 const fixturesDir = join(import.meta.dir, "..", "fixtures");
+const coreWorkflowsDir = join(import.meta.dir, "..", "..", "core", "workflows");
 
 describe("loadAgent", () => {
   it("loads a valid agent from yaml + prompt.md", () => {
@@ -431,5 +432,38 @@ describe("validateBrief", () => {
     expect(result.valid).toBe(false);
     expect(result.missing).toHaveLength(1);
     expect(result.missing[0].heading).toBe("## Stakes");
+  });
+});
+
+// ── resolveWorkflowFile (Bug 2: workflow resolution mismatch) ────────
+
+describe("resolveWorkflowFile", () => {
+  it("resolves a -workflow id to its flat <name>.workflow.yaml file", () => {
+    // cto-execution profile declares `workflow: cto-execution-workflow`, but the
+    // file on disk is the flat core/workflows/cto-execution.workflow.yaml.
+    const resolved = resolveWorkflowFile(coreWorkflowsDir, "cto-execution-workflow");
+    expect(resolved.endsWith("cto-execution.workflow.yaml")).toBe(true);
+    // And it must actually load.
+    expect(loadWorkflow(resolved).id).toBe("cto-execution-workflow");
+  });
+
+  it("resolves dev-execution-workflow to its flat file", () => {
+    const resolved = resolveWorkflowFile(coreWorkflowsDir, "dev-execution-workflow");
+    expect(resolved.endsWith("dev-execution.workflow.yaml")).toBe(true);
+    expect(loadWorkflow(resolved).id).toBe("dev-execution-workflow");
+  });
+
+  it("resolves the directory convention (paperclip-worker/workflow.yaml)", () => {
+    // paperclip-worker's profile declares `workflow: paperclip-worker`, resolved
+    // via the directory convention; the file's own id is paperclip-worker-workflow.
+    const resolved = resolveWorkflowFile(coreWorkflowsDir, "paperclip-worker");
+    expect(resolved.endsWith(join("paperclip-worker", "workflow.yaml"))).toBe(true);
+    expect(loadWorkflow(resolved).id).toBe("paperclip-worker-workflow");
+  });
+
+  it("throws a helpful error listing candidates for an unknown workflow", () => {
+    expect(() => resolveWorkflowFile(coreWorkflowsDir, "does-not-exist")).toThrow(
+      /not found \(tried:/,
+    );
   });
 });

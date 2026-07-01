@@ -64,6 +64,10 @@ export class WorkflowRunner {
   private profileConfig?: ProfileConfig;
   private delegationDelegate?: DelegationDelegate;
   private agents?: Map<string, AgentConfig>;
+  /** The session brief, injected into every step's prompt as grounding context. */
+  private brief: string = "";
+  /** When true, `user-approval` gates auto-approve instead of prompting (aos run --yes). */
+  private autoApprove: boolean = false;
 
   constructor(config: WorkflowConfig, adapter: AOSAdapter, opts?: {
     sessionDir?: string;
@@ -71,6 +75,8 @@ export class WorkflowRunner {
     profileConfig?: ProfileConfig;
     delegationDelegate?: DelegationDelegate;
     agents?: Map<string, AgentConfig>;
+    brief?: string;
+    autoApprove?: boolean;
   }) {
     this.config = config;
     this.adapter = adapter;
@@ -90,6 +96,10 @@ export class WorkflowRunner {
     if (opts?.agents) {
       this.agents = opts.agents;
     }
+    if (opts?.brief) {
+      this.brief = opts.brief;
+    }
+    this.autoApprove = opts?.autoApprove ?? false;
   }
 
   private emitEvent(event: TranscriptEntry): void {
@@ -108,6 +118,10 @@ export class WorkflowRunner {
       step_name: step.name ?? step.id,
       workflow_id: this.config.id,
       workflow_name: this.config.name,
+      // The brief is the workflow's root input; expose it so any step prompt can
+      // reference {{brief}} explicitly. resolveStepPrompt also prepends it as a
+      // context block for steps that do not.
+      brief: this.brief,
     };
 
     // Add agent names if available
@@ -145,7 +159,13 @@ export class WorkflowRunner {
     const prompt = step.prompt ?? "";
     if (!prompt) return prompt;
     const vars = this.buildTemplateVars(step);
-    return resolveTemplate(prompt, vars);
+    const resolved = resolveTemplate(prompt, vars);
+    // Ground every step in the brief. Prepend it as a labeled context block
+    // unless the prompt already expanded {{brief}} itself (avoids duplication).
+    if (this.brief && !resolved.includes(this.brief)) {
+      return `## Brief\n\n${this.brief}\n\n---\n\n${resolved}`;
+    }
+    return resolved;
   }
 
   /**
@@ -725,6 +745,18 @@ export class WorkflowRunner {
       prompt: gate.prompt,
     });
 
+    if (this.autoApprove) {
+      this.emitEvent({
+        type: "gate_result",
+        timestamp: new Date().toISOString(),
+        gate_id: gateId,
+        result: "approved",
+        reason: "auto_approve",
+      });
+      this.gatesPassed.push(gateId);
+      return;
+    }
+
     const approved = await this.adapter.promptConfirm("Review Gate", gate.prompt);
 
     this.emitEvent({
@@ -756,6 +788,29 @@ export class WorkflowRunner {
     const maxIterations = gate.max_iterations ?? 3;
     const gateId = `gate-${gate.after}`;
     let currentPrompt = step.prompt ?? "";
+
+    if (this.autoApprove) {
+      if (this.artifactManager && step.output) {
+        await this.artifactManager.updateReviewStatus(step.output, "approved", gateId);
+      }
+      this.emitEvent({
+        type: "gate_prompt",
+        timestamp: new Date().toISOString(),
+        gate_id: gateId,
+        after_step: gate.after,
+        prompt: gate.prompt,
+      });
+      this.emitEvent({
+        type: "gate_result",
+        timestamp: new Date().toISOString(),
+        gate_id: gateId,
+        result: "approved",
+        reason: "auto_approve",
+        iteration: 1,
+      });
+      this.gatesPassed.push(gateId);
+      return;
+    }
 
     for (let iteration = 0; iteration <= maxIterations; iteration++) {
       this.emitEvent({

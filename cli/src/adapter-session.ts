@@ -15,7 +15,6 @@
 import { join, dirname } from "node:path";
 import { fileURLToPath } from "node:url";
 import { pathToFileURL } from "node:url";
-import { tmpdir } from "node:os";
 import { appendFileSync, mkdirSync, readFileSync } from "node:fs";
 import readline from "node:readline";
 import {
@@ -38,7 +37,7 @@ import {
   createRuntimeMemoryProvider,
   type RuntimeMemoryProvider,
 } from "@aos-harness/runtime/memory-provider-factory";
-import { startBridgeServer } from "./bridge-server";
+import { startBridgeServer, bridgeSocketPath } from "./bridge-server";
 import { renderTextGauge, renderRoundOneLiner } from "./gauges";
 import { getAdapterDir } from "./utils";
 import { createSessionMcpManager } from "./mcp-session";
@@ -75,6 +74,8 @@ export interface AdapterSessionConfig {
    */
   platformUrl?: string;
   agentTimeoutMs?: number;
+  /** Auto-approve execution-workflow review gates (aos run --yes). */
+  autoApprove?: boolean;
 }
 
 function createStreamingPrinter() {
@@ -433,6 +434,7 @@ export async function runAdapterSession(config: AdapterSessionConfig): Promise<v
     workflowsDir: config.workflowsDir,
     projectDir: config.root,
     memoryProvider: memory.provider,
+    autoApprove: config.autoApprove,
     onTranscriptEvent: (entry) => {
       transcriptSink.enqueue(entry);
     },
@@ -456,7 +458,10 @@ export async function runAdapterSession(config: AdapterSessionConfig): Promise<v
     }
 
     // ── Bridge server (MCP tool calls → engine) ────────────────
-    const sockPath = join(tmpdir(), `aos-bridge-${config.sessionId}.sock`);
+    // Hashed, length-bounded socket path — long profile ids (e.g.
+    // architecture-review) otherwise overflow the unix sun_path cap on a deep
+    // macOS $TMPDIR and `listen()` fails.
+    const sockPath = bridgeSocketPath(config.sessionId);
     const here = dirname(fileURLToPath(import.meta.url));
     const bridgeScriptPath = join(here, "mcp-arbiter-bridge.ts");
 

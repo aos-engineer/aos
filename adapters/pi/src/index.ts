@@ -448,6 +448,7 @@ export default function (pi: ExtensionAPI) {
           workflowsDir: process.env.AOS_WORKFLOWS_DIR,
           projectDir: projectRoot,
           memoryProvider: memory.provider,
+          autoApprove: process.env.AOS_AUTO_APPROVE === "1",
           onTranscriptEvent: (entry) => {
             transcriptSink?.enqueue(entry);
           },

@@ -1,0 +1,31 @@
+schema: aos/workflow/v1
+id: flat-exec-workflow
+name: Flat Execution Workflow
+description: >
+  Fixture using the FLAT `<name>.workflow.yaml` convention that core execution
+  profiles use (cto-execution.workflow.yaml), so the engine's workflow
+  resolution is exercised through the same path a real `aos run` hits.
+
+steps:
+  - id: understand
+    name: Requirements Analysis
+    action: targeted-delegation
+    agents: [advocate]
+    prompt: "Analyze this feature request and write user stories."
+    input: []
+    output: requirements_analysis
+    review_gate: true
+
+  - id: synthesize
+    name: Final Assembly
+    action: orchestrator-synthesis
+    prompt: "Assemble the execution package from the analysis."
+    input: [requirements_analysis]
+    output: execution_package
+    review_gate: false
+
+gates:
+  - after: understand
+    type: user-approval
+    prompt: "Do these requirements look right?"
+    on_rejection: retry_with_feedback

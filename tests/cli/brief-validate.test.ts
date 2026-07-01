@@ -39,6 +39,16 @@ describe("validateBrief - required sections", () => {
     expect(r.errors.find((e) => e.section === "Feature / Vision")).toBeUndefined();
   });
 
+  test("`## Feature / Change` (dev-execution) accepted as alias of `## Feature / Vision`", () => {
+    // dev-execution's profile uses `## Feature / Change`; a correct brief for it
+    // must not trip the execution-brief linter.
+    const brief = `# Brief: T\n## Feature / Change\nc\n## Context\nx\n## Constraints\nx\n## Success Criteria\nx`;
+    const r = validateBrief(brief, { expectedKind: "execution" });
+    expect(r.errors).toEqual([]);
+    // And it auto-detects as execution without an explicit kind.
+    expect(validateBrief(brief).detectedKind).toBe("execution");
+  });
+
   test("heading match is case-insensitive", () => {
     const r = validateBrief(`# Brief: T\n## SITUATION\nx\n## stakes\nx\n## CONSTRAINTS\nx\n## key question\nx`, { expectedKind: "deliberation" });
     expect(r.errors.filter((e) => e.kind === "missing-required")).toHaveLength(0);

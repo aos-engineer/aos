@@ -25,8 +25,8 @@ describe("briefSchema", () => {
     ]);
   });
 
-  test("execution schema declares Vision as alias for Feature / Vision", () => {
-    expect(EXECUTION_SCHEMA.aliases["Feature / Vision"]).toEqual(["Vision"]);
+  test("execution schema declares Vision and Feature / Change as aliases for Feature / Vision", () => {
+    expect(EXECUTION_SCHEMA.aliases["Feature / Vision"]).toEqual(["Vision", "Feature / Change"]);
   });
 
   test("deliberation schema has no aliases", () => {

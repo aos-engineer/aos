@@ -1,6 +1,6 @@
 import { describe, it, expect } from "bun:test";
 import { join } from "node:path";
-import { existsSync, rmSync } from "node:fs";
+import { existsSync, rmSync, readFileSync } from "node:fs";
 import { AOSEngine } from "../src/engine";
 import { MockAdapter } from "./mock-adapter";
 import type { TranscriptEntry } from "../src/types";
@@ -311,6 +311,63 @@ describe("AOSEngine", () => {
         },
       );
       expect(engine.isWorkflowMode()).toBe(true);
+    });
+
+    // Bug 2 regression: the engine must resolve the FLAT `<name>.workflow.yaml`
+    // convention (used by every core execution profile, e.g.
+    // cto-execution.workflow.yaml), not just the `<id>/workflow.yaml` directory
+    // convention. The old engine code did `join(workflowsDir, profile.workflow)`
+    // and threw "workflow.yaml not found" for flat files.
+    it("resolves the flat <name>.workflow.yaml convention through the engine (Bug 2)", () => {
+      const adapter = new MockAdapter();
+      const engine = new AOSEngine(
+        adapter,
+        join(fixturesDir, "profiles", "flat-workflow-council"),
+        {
+          agentsDir: join(fixturesDir, "agents"),
+          workflowsDir: join(fixturesDir, "workflows"),
+        },
+      );
+      expect(engine.isWorkflowMode()).toBe(true);
+    });
+
+    // Bugs 3 & 4 through a full engine run: the brief must reach workflow-step
+    // agents, and --yes/autoApprove must clear the user-approval gate without a
+    // prompt (which would otherwise block a non-interactive run).
+    it("injects the brief and auto-approves gates in a full workflow run (Bugs 3 & 4)", async () => {
+      const adapter = new MockAdapter();
+      const engine = new AOSEngine(
+        adapter,
+        join(fixturesDir, "profiles", "flat-workflow-council"),
+        {
+          agentsDir: join(fixturesDir, "agents"),
+          workflowsDir: join(fixturesDir, "workflows"),
+          autoApprove: true,
+        },
+      );
+      const briefPath = join(fixturesDir, "briefs", "test-brief", "brief.md");
+      const tmpDir = join(import.meta.dir, "..", ".tmp-flat-workflow-" + Date.now());
+      try {
+        await engine.start(briefPath, { deliberationDir: tmpDir });
+
+        // Bug 4: the user-approval gate was auto-approved, not prompted.
+        const gateResult = engine.getTranscript().find((e) => e.type === "gate_result");
+        expect(gateResult).toBeDefined();
+        expect(gateResult!.reason).toBe("auto_approve");
+        const promptConfirmCalls = adapter.calls.filter((c) => c.method === "promptConfirm");
+        expect(promptConfirmCalls).toHaveLength(0);
+
+        // Bug 3: a stable line from the brief reached an agent-facing message.
+        const brief = readFileSync(briefPath, "utf-8");
+        const marker = "We are testing the AOS Harness constraint engine.";
+        expect(brief).toContain(marker); // guard the fixture
+        const sawBrief = adapter.calls.some((c) =>
+          c.args.some((a) => typeof a === "string" && a.includes(marker)),
+        );
+        expect(sawBrief).toBe(true);
+      } finally {
+        if (existsSync(tmpDir)) rmSync(tmpDir, { recursive: true, force: true });
+      }
     });
 
     it("creates artifacts directory when workflow is present", async () => {

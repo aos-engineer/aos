@@ -326,6 +326,36 @@ export function loadWorkflow(workflowDir: string): WorkflowConfig {
   return config;
 }
 
+/**
+ * Resolve a workflow id (a profile's `workflow:` field) to its YAML file inside
+ * `workflowsDir`, trying every layout convention the repo uses. Both the flat
+ * `<name>.workflow.yaml` files (the majority) and the directory convention
+ * `<id>/workflow.yaml` (paperclip-worker) resolve here, so every caller —
+ * `aos run`, `aos validate`, the engine, and the paperclip pass-runner — agrees
+ * on where a workflow lives. Returns a path suitable for `loadWorkflow`.
+ *
+ * Candidates, in order:
+ *   1. `<id sans -workflow>.workflow.yaml`  (e.g. cto-execution-workflow → cto-execution.workflow.yaml)
+ *   2. `<id>.workflow.yaml`
+ *   3. `<id>.yaml`
+ *   4. `<id>/workflow.yaml`                 (directory convention, e.g. paperclip-worker)
+ */
+export function resolveWorkflowFile(workflowsDir: string, workflowId: string): string {
+  const candidates = [
+    join(workflowsDir, `${workflowId.replace(/-workflow$/, "")}.workflow.yaml`),
+    join(workflowsDir, `${workflowId}.workflow.yaml`),
+    join(workflowsDir, `${workflowId}.yaml`),
+    join(workflowsDir, workflowId, "workflow.yaml"),
+  ];
+  for (const candidate of candidates) {
+    if (existsSync(candidate)) return candidate;
+  }
+  throw new ConfigError(
+    `workflow "${workflowId}" not found (tried: ${candidates.join(", ")})`,
+    workflowsDir,
+  );
+}
+
 export function loadSkill(skillDir: string): SkillConfig {
   const yamlPath = join(skillDir, "skill.yaml");
 
