@@ -613,10 +613,11 @@ pre code {
 
 .docs-article pre {
   position: relative;
-  border-color: rgba(255, 255, 255, 0.08);
-  background: #18181b !important;
-  color: #f4f4f5;
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  /* Theme-aware: white surface + dark text in light mode, #18181b + light text
+     in dark mode (reuses the shared tokens, so it tracks the toggle). */
+  border: 1px solid var(--color-border);
+  background: var(--color-surface) !important;
+  color: var(--color-text);
 }
 
 .docs-article pre code {
