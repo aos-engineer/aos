@@ -67,17 +67,10 @@ function isActive(href: string) {
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet" />
     <title>{title} | AOS.engineer</title>
-    <script is:inline>
-      (() => {
-        const stored = localStorage.getItem('aos-theme')
-        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        const dark = stored === 'dark' || (!stored && prefersDark)
-        const root = document.documentElement
-        root.classList.toggle('dark', dark)
-        // Reflect the scheme on the root so the browser honors it (and won't force-dark).
-        root.style.colorScheme = dark ? 'dark' : 'light'
-      })()
-    </script>
+    <!-- External file (is:inline here means "emit verbatim, don't bundle" — the
+         tag still has a src, so CSP `script-src 'self'` allows it, unlike an
+         inline script). Render-blocking so the theme is set before first paint. -->
+    <script is:inline src="/theme.js"></script>
   </head>
   <body class="site-shell min-h-screen bg-[var(--color-bg)] text-[var(--color-text)]">
     <aside class="docs-rail">
@@ -164,19 +157,6 @@ function isActive(href: string) {
       </nav>
     </footer>
 
-    <script is:inline>
-      // Event delegation on the document — robust even if the header re-renders.
-      document.addEventListener('click', (event) => {
-        const target = event.target
-        const toggle = target instanceof Element ? target.closest('[data-theme-toggle]') : null
-        if (!toggle) return
-        const root = document.documentElement
-        const next = !root.classList.contains('dark')
-        root.classList.toggle('dark', next)
-        root.style.colorScheme = next ? 'dark' : 'light'
-        localStorage.setItem('aos-theme', next ? 'dark' : 'light')
-      })
-    </script>
   </body>
 </html>
 
