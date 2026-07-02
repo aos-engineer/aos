@@ -64,6 +64,7 @@ const topLinks = [
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content={description ?? title} />
     <meta name="theme-color" content="#f7f7f8" />
+    <meta name="color-scheme" content="light dark" />
     <meta name="robots" content="index,follow" />
     <link rel="canonical" href={canonicalUrl} />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
@@ -75,9 +76,11 @@ const topLinks = [
       (() => {
         const stored = localStorage.getItem('aos-theme')
         const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-        if (stored === 'dark' || (!stored && prefersDark)) {
-          document.documentElement.classList.add('dark')
-        }
+        const dark = stored === 'dark' || (!stored && prefersDark)
+        const root = document.documentElement
+        root.classList.toggle('dark', dark)
+        // Reflect the scheme on the root so the browser honors it (and won't force-dark).
+        root.style.colorScheme = dark ? 'dark' : 'light'
       })()
     </script>
   </head>
@@ -185,10 +188,15 @@ const topLinks = [
     </div>
 
     <script is:inline>
-      document.querySelector('[data-theme-toggle]')?.addEventListener('click', () => {
+      // Event delegation on the document — robust even if the header re-renders.
+      document.addEventListener('click', (event) => {
+        const target = event.target
+        const toggle = target instanceof Element ? target.closest('[data-theme-toggle]') : null
+        if (!toggle) return
         const root = document.documentElement
         const next = !root.classList.contains('dark')
         root.classList.toggle('dark', next)
+        root.style.colorScheme = next ? 'dark' : 'light'
         localStorage.setItem('aos-theme', next ? 'dark' : 'light')
       })
     </script>

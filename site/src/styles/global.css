@@ -35,6 +35,18 @@
   --color-signal-hover: #6ee7b7;
 }
 
+/* Declare the color scheme on the document root so the browser respects the
+   site's own theming and does NOT force-darken it (e.g. Chrome "Auto Dark Mode
+   for Web Contents"), which would otherwise keep the page dark no matter what
+   the toggle sets. Kept in lockstep with the `.dark` class. */
+:root {
+  color-scheme: light;
+}
+
+:root.dark {
+  color-scheme: dark;
+}
+
 html {
   background-color: var(--color-bg);
   color: var(--color-text);
